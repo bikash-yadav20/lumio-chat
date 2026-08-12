@@ -10,7 +10,7 @@ export const SocketProvider = ({ children }) => {
 
   const socket = useMemo(() => {
     if (!currentUser) return null;
-    return io("http://localhost:3000", {
+    return io(process.env.VITE_SOCKET_URL, {
       auth: { userId: currentUser.user_id },
       withCredentials: true,
     });
