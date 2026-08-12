@@ -2,10 +2,11 @@ import React, { useContext, useEffect } from "react";
 import { MdMoreVert } from "react-icons/md";
 import { HiOutlineSearch } from "react-icons/hi";
 import { AuthContext } from "../context/authContext/authContext";
+import { useNavigate } from "react-router-dom";
 
 const Navbar = () => {
   const { loggedInUser, fetchLoggedUser } = useContext(AuthContext);
-
+  const navigate = useNavigate();
   useEffect(() => {
     fetchLoggedUser();
   }, []);
@@ -14,9 +15,13 @@ const Navbar = () => {
       {/* Left */}
       <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
         <img
+          onClick={() => {
+            fetchLoggedUser();
+            navigate("/account");
+          }}
           src={loggedInUser.profile_picture}
           alt="Profile"
-          className="w-8 h-8 sm:w-9 sm:h-9 rounded-full"
+          className="w-8 h-8 sm:w-9 sm:h-9 rounded-full cursor-pointer"
         />
 
         <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-blue-700 whitespace-nowrap">

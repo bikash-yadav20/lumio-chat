@@ -1,7 +1,10 @@
-import React from "react";
+import React, { useContext } from "react";
 import { FiUser, FiInfo, FiAtSign, FiEdit2 } from "react-icons/fi";
+import { AuthContext } from "../context/authContext/authContext";
 
 const UserProfile = () => {
+  const { loggedInUser } = useContext(AuthContext);
+
   return (
     <div className="w-full h-full bg-[#F8FAFC] overflow-y-auto">
       {/* Top Accent */}
@@ -12,7 +15,7 @@ const UserProfile = () => {
         <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8">
           <div className="relative">
             <img
-              src="https://i.pravatar.cc/300"
+              src={loggedInUser.profile_picture}
               alt=""
               className="w-40 h-40 rounded-full object-cover border-4 border-white shadow-xl"
             />
@@ -23,13 +26,16 @@ const UserProfile = () => {
           </div>
 
           <div className="flex-1 text-center lg:text-left">
-            <h1 className="text-4xl font-bold text-slate-800">John Doe</h1>
+            <h1 className="text-4xl font-bold text-slate-800">
+              {loggedInUser.full_name}
+            </h1>
 
-            <p className="text-blue-600 text-lg mt-1">@johndoe</p>
+            <p className="text-blue-600 text-lg mt-1">
+              {loggedInUser.user_name}
+            </p>
 
             <p className="text-slate-500 mt-4 max-w-2xl leading-7">
-              Passionate Full Stack Developer creating beautiful and scalable
-              React applications.
+              {loggedInUser.bio}
             </p>
 
             <button className="mt-6 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition">
@@ -49,7 +55,9 @@ const UserProfile = () => {
               <div>
                 <p className="text-sm text-slate-500">Full Name</p>
 
-                <h3 className="font-semibold text-lg">John Doe</h3>
+                <h3 className="font-semibold text-lg">
+                  {loggedInUser.full_name}
+                </h3>
               </div>
             </div>
           </div>
@@ -63,7 +71,9 @@ const UserProfile = () => {
               <div>
                 <p className="text-sm text-slate-500">Username</p>
 
-                <h3 className="font-semibold text-lg">@johndoe</h3>
+                <h3 className="font-semibold text-lg">
+                  {loggedInUser.user_name}
+                </h3>
               </div>
             </div>
           </div>
@@ -77,11 +87,7 @@ const UserProfile = () => {
               <div>
                 <p className="text-sm text-slate-500 mb-2">Bio</p>
 
-                <p className="text-slate-700 leading-7">
-                  Passionate Full Stack Developer creating beautiful,
-                  responsive, and scalable web applications using React,
-                  Express, Node.js, and MySQL.
-                </p>
+                <p className="text-slate-700 leading-7">{loggedInUser.bio}</p>
               </div>
             </div>
           </div>

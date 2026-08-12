@@ -1,16 +1,33 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import ChatSidebar from "../components/ChatSidebar";
 import ChatSection from "../components/ChatSection";
 import UserDetail from "../components/UserDetail";
 import Navbar from "../components/Navbar";
+import { getBlockedStatus } from "../services/client";
 
 const ChatPage = () => {
   const [isActive, setIsActive] = useState(false);
   const [conversationId, setConversationId] = useState(null);
   const [receiverId, setReceiverId] = useState(null);
   const [receiverData, setReceiverData] = useState({});
+  const [blockStatus, setBlockStatus] = useState({
+    youBlocked: false,
+    theyBlocked: false,
+  });
+  console.log("conv id", conversationId);
 
-  console.log("Iam receiver", receiverData);
+  useEffect(() => {
+    const status = async () => {
+      try {
+        if (!receiverId) return;
+        const res = await getBlockedStatus(receiverId);
+        setBlockStatus(res);
+      } catch (error) {
+        console.error("Failed to fetch block status:", error);
+      }
+    };
+    status();
+  }, [receiverId]);
 
   return (
     <div>
@@ -49,6 +66,7 @@ const ChatPage = () => {
             receiverId={receiverId}
             setReceiverData={setReceiverData}
             receiverData={receiverData}
+            blockStatus={blockStatus}
           />
         </main>
 
@@ -56,7 +74,11 @@ const ChatPage = () => {
         <aside
           className={`${isActive ? "hidden xl:flex w-80 border-l bg-white" : "hidden"} `}
         >
-          <UserDetail receiverData={receiverData} />
+          <UserDetail
+            receiverData={receiverData}
+            blockStatus={blockStatus}
+            setBlockStatus={setBlockStatus}
+          />
         </aside>
       </div>
     </div>

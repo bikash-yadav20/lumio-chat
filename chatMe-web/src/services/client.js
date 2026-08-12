@@ -38,6 +38,12 @@ export const getChats = async () => {
   return res.data;
 };
 
+//create a new conversation
+export const createConversation = async (receiverId) => {
+  const res = await api.post("/chat-me/create-conversation", { receiverId });
+  return res.data;
+};
+
 //send message
 export const sendMessage = async (payload) => {
   const res = await api.post("/chat-me/send-message", payload);
@@ -61,5 +67,30 @@ export const getUsers = async () => {
 //fetch single user
 export const fetchUserById = async (id) => {
   const res = await api.get(`/chat-me/users/${id}`);
+  return res.data;
+};
+
+//block user
+export const blockUser = async (id) => {
+  const res = await api.post("/chat-me/block", id);
+  return res.data;
+};
+
+//unblock user
+
+export const unblockUser = async (blocked_id) => {
+  const res = await api.post("/chat-me/unblock", blocked_id);
+  return res.data;
+};
+
+//get block status
+export const getBlockedStatus = async (otherUserId) => {
+  const res = await api.get(`/chat-me/block-status/${otherUserId}`);
+  return res.data;
+};
+
+//mark messages as seen
+export const markMessageAsSeen = async (conversationId) => {
+  const res = await api.patch(`chat-me/messages/seen/${conversationId}`);
   return res.data;
 };

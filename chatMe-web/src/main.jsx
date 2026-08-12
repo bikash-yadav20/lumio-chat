@@ -8,10 +8,10 @@ import { SocketProvider } from "./context/socketContext/socketContext.jsx";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <SocketProvider>
-      <AuthProvider>
+    <AuthProvider>
+      <SocketProvider>
         <App />
-      </AuthProvider>
-    </SocketProvider>
+      </SocketProvider>
+    </AuthProvider>
   </StrictMode>,
 );

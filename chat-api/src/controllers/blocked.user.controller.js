@@ -46,4 +46,31 @@ const unblockUser = async (req, res) => {
   }
 };
 
-module.exports = { blockUser, unblockUser };
+//get blocked user
+
+const getBlockStatus = async (req, res) => {
+  try {
+    const currentUserId = req.user.user_id; // logged-in user
+    const { otherUserId } = req.params; // the user you're checking against
+
+    // Check if YOU blocked them
+    const youBlocked = await BlockedUser.findOne({
+      where: { blocker_id: currentUserId, blocked_id: otherUserId },
+    });
+
+    // Check if THEY blocked you
+    const theyBlocked = await BlockedUser.findOne({
+      where: { blocker_id: otherUserId, blocked_id: currentUserId },
+    });
+
+    res.json({
+      youBlocked: !!youBlocked,
+      theyBlocked: !!theyBlocked,
+    });
+  } catch (error) {
+    console.error("Error checking block status:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports = { blockUser, unblockUser, getBlockStatus };

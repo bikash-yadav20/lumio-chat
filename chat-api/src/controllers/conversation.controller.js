@@ -100,6 +100,7 @@ const createChatAndMessage = async (req, res) => {
         sender_id: req.user.user_id,
         message_type: req.body.message_type || "text",
         message: req.body.message,
+        is_seen: false,
       },
       { transaction: t },
     );
@@ -111,7 +112,29 @@ const createChatAndMessage = async (req, res) => {
     // Attach user to message
     const fullMessage = { ...message.toJSON(), User: sender };
 
-    getIO().to(chat.conversation_id).emit("newMessage", fullMessage);
+    // unseen messages count for receiver
+    const unseenCount = await Message.count({
+      where: {
+        conversation_id: chat.conversation_id,
+        is_seen: false,
+        sender_id: { [Op.ne]: req.user.user_id },
+      },
+    });
+
+    // Send to all other participants (receiver side)
+    getIO().to(chat.conversation_id).emit("newMessage", {
+      fullMessage,
+      conversationId: chat.conversation_id,
+      unseenCount, // receiver sees updated count
+    });
+
+    // Send only to the sender socket (so they see last message but not inflated count)
+    getIO().to(req.user.user_id).emit("newMessage", {
+      fullMessage,
+      conversationId: chat.conversation_id,
+      unseenCount: 0, // sender’s own unseen count stays 0
+    });
+
     await t.commit();
     res.json({ chat, message });
   } catch (error) {
@@ -128,14 +151,12 @@ const getConversation = async (req, res) => {
 
     const conversations = await Conversation.findAll({
       include: [
-        // ✅ Ensure current user is part of conversation
         {
           model: ConversationParticipants,
           as: "memperships",
           required: true,
           where: { user_id: userId },
         },
-        // ✅ Fetch all participants with user details
         {
           model: ConversationParticipants,
           as: "participants",
@@ -155,29 +176,41 @@ const getConversation = async (req, res) => {
       ],
     });
 
-    const response = conversations.map((conv) => {
-      const lastMessage = conv.Messages[0] || null;
+    const response = await Promise.all(
+      conversations.map(async (conv) => {
+        const lastMessage = conv.Messages[0] || null;
 
-      const otherParticipants = conv.participants
-        .filter((p) => p.user_id !== userId)
-        .map((p) => ({
-          user_id: p.User.user_id,
-          full_name: p.User.full_name,
-          profile_picture: p.User.profile_picture,
-        }));
+        const otherParticipants = conv.participants
+          .filter((p) => p.user_id !== userId)
+          .map((p) => ({
+            user_id: p.User.user_id,
+            full_name: p.User.full_name,
+            profile_picture: p.User.profile_picture,
+          }));
 
-      return {
-        conversation_id: conv.conversation_id,
-        participants: otherParticipants,
-        last_message: lastMessage
-          ? {
-              message_id: lastMessage.message_id,
-              message: lastMessage.message,
-              created_at: lastMessage.created_at,
-            }
-          : null,
-      };
-    });
+        // Count unseen messages
+        const unseenCount = await Message.count({
+          where: {
+            conversation_id: conv.conversation_id,
+            is_seen: false,
+            sender_id: { [Op.ne]: userId },
+          },
+        });
+
+        return {
+          conversation_id: conv.conversation_id,
+          participants: otherParticipants,
+          last_message: lastMessage
+            ? {
+                message_id: lastMessage.message_id,
+                message: lastMessage.message,
+                created_at: lastMessage.created_at,
+              }
+            : null,
+          unseen_count: unseenCount,
+        };
+      }),
+    );
 
     res.json(response);
   } catch (error) {
@@ -185,4 +218,68 @@ const getConversation = async (req, res) => {
   }
 };
 
-module.exports = { createChatAndMessage, getConversation };
+//get or create a new conversation
+const getOrCreateConversation = async (req, res) => {
+  let t;
+  try {
+    t = await sequelize.transaction();
+    const { receiverId } = req.body;
+    const userId = req.user.user_id;
+
+    //looking for an existing conversation
+    const conversations = await Conversation.findAll({
+      where: { type: "private" },
+      include: [
+        {
+          model: ConversationParticipants,
+          as: "participants",
+          attributes: ["user_id"],
+        },
+      ],
+
+      transaction: t,
+    });
+
+    if (conversations) {
+      const chat = conversations.find((c) => {
+        const ids = c.participants.map((p) => p.user_id).sort();
+        const target = [userId, receiverId].sort();
+        return JSON.stringify(ids) === JSON.stringify(target);
+      });
+      if (chat) {
+        await t.commit();
+        return res.json(chat);
+      }
+    }
+
+    //if not found create a new conversation
+    const newConversation = await Conversation.create(
+      { type: "private", created_by: userId },
+      { transaction: t },
+    );
+
+    await ConversationParticipants.bulkCreate(
+      [
+        { conversation_id: newConversation.conversation_id, user_id: userId },
+        {
+          conversation_id: newConversation.conversation_id,
+          user_id: receiverId,
+        },
+      ],
+      { transaction: t },
+    );
+
+    await t.commit();
+    res.json(newConversation);
+  } catch (error) {
+    if (t) await t.rollback();
+
+    res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports = {
+  createChatAndMessage,
+  getConversation,
+  getOrCreateConversation,
+};

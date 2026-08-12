@@ -1,5 +1,6 @@
 //get all messages for user
 const { Message, User } = require("../models");
+const { Op } = require("sequelize");
 
 const getMessages = async (req, res) => {
   try {
@@ -35,4 +36,27 @@ const getMessages = async (req, res) => {
   }
 };
 
-module.exports = { getMessages };
+//mark messages as seen
+const markMessagesAsSeen = async (req, res) => {
+  try {
+    const userId = req.user.user_id;
+    const { conversationId } = req.params;
+
+    await Message.update(
+      { is_seen: true },
+      {
+        where: {
+          conversation_id: conversationId,
+          is_seen: false,
+          sender_id: { [Op.ne]: userId },
+        },
+      },
+    );
+
+    res.json({ success: true, message: "Messages marked as seen" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports = { getMessages, markMessagesAsSeen };

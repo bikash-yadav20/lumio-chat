@@ -1,14 +1,52 @@
 import React, { use, useContext, useEffect, useState } from "react";
 import { FiSearch, FiEdit2 } from "react-icons/fi";
-import { getChats as fetchChats } from "../services/client";
+import { createConversation, getChats as fetchChats } from "../services/client";
+import { markMessageAsSeen } from "../services/client";
 import { AuthContext } from "../context/authContext/authContext";
+import { SocketContext } from "../context/socketContext/socketContext";
 
 const ChatSidebar = ({ setConversationId, setReceiverId, setIsActive }) => {
   const [chats, setChats] = useState([]);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("chat");
+  const [seenCount, setSeenCount] = useState();
 
   const { getUsers, Users } = useContext(AuthContext);
+  const socket = useContext(SocketContext);
+
+  // socket listener to update message count and last message
+  useEffect(() => {
+    if (!socket) return;
+
+    const handler = ({ fullMessage, conversationId, unseenCount }) => {
+      setChats((prevChats) =>
+        prevChats.map((chat) =>
+          chat.conversation_id === conversationId
+            ? {
+                ...chat,
+                last_message: {
+                  message_id: fullMessage.message_id,
+                  message: fullMessage.message,
+                  createdAt: fullMessage.created_at,
+                },
+                unseen_count: unseenCount,
+              }
+            : chat,
+        ),
+      );
+    };
+
+    socket.on("newMessage", handler);
+    return () => socket.off("newMessage", handler);
+  }, [socket]);
+
+  // join all conversation rooms once chats are loaded
+  useEffect(() => {
+    if (!socket) return;
+    chats.forEach((chat) => {
+      socket.emit("joinConversation", chat.conversation_id);
+    });
+  }, [chats, socket]);
 
   ///fetch all chats and last message of users
   useEffect(() => {
@@ -16,19 +54,40 @@ const ChatSidebar = ({ setConversationId, setReceiverId, setIsActive }) => {
       try {
         const data = await fetchChats();
         setChats(data);
+        if (socket) {
+          data.forEach((chat) => {
+            socket.emit("joinConversation", chat.conversation_id);
+          });
+        }
       } catch (error) {
         console.error("Error fetching chats:", error.message);
       }
     };
-
     loadChats();
-  }, []);
+  }, [socket]);
 
   const filteredChats = chats.filter((chat) =>
     chat.participants?.[0]?.full_name
       ?.toLowerCase()
       .includes(search.toLowerCase()),
   );
+
+  //handle mark message as seen
+  const handleMarkMessageAsSeen = async (conversationId) => {
+    try {
+      await markMessageAsSeen(conversationId);
+
+      setChats((prevChats) =>
+        prevChats.map((chat) =>
+          chat.conversation_id === conversationId
+            ? { ...chat, unseen_count: 0 }
+            : chat,
+        ),
+      );
+    } catch (error) {
+      console.error("Failed to mark messages as seen:", error);
+    }
+  };
 
   return (
     <div className="flex h-full w-full flex-col bg-white border-r">
@@ -92,6 +151,7 @@ const ChatSidebar = ({ setConversationId, setReceiverId, setIsActive }) => {
                 onClick={() => {
                   setConversationId(chat.conversation_id);
                   setReceiverId(chat.participants[0].user_id);
+                  handleMarkMessageAsSeen(chat.conversation_id);
                   setIsActive(true);
                 }}
                 key={chat.conversation_id}
@@ -133,9 +193,11 @@ const ChatSidebar = ({ setConversationId, setReceiverId, setIsActive }) => {
                       : ""}
                   </span>
 
-                  <span className="mt-2 flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-xs font-semibold text-white">
-                    2
-                  </span>
+                  {chat.unseen_count > 0 && (
+                    <span className="mt-2 flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-xs font-semibold text-white">
+                      {chat.unseen_count}
+                    </span>
+                  )}
                 </div>
               </div>
             ))
@@ -161,9 +223,15 @@ const ChatSidebar = ({ setConversationId, setReceiverId, setIsActive }) => {
           <div className="flex-1 overflow-y-auto">
             {Users.map((user) => (
               <div
-                onClick={() => {
-                  setReceiverId(user.user_id);
-                  setIsActive(true);
+                onClick={async () => {
+                  try {
+                    const conv = await createConversation(user.user_id);
+                    setConversationId(conv.conversation_id);
+                    setReceiverId(user.user_id);
+                    setIsActive(true);
+                  } catch (error) {
+                    console.error("failed to create conversation", error);
+                  }
                 }}
                 className="flex cursor-pointer items-start justify-start border-b border-gray-100 px-4 py-3 transition hover:bg-blue-50"
               >

@@ -13,6 +13,7 @@ const ChatSection = ({
   receiverId,
   setReceiverData,
   receiverData,
+  blockStatus,
 }) => {
   const [allMessages, setAllMessages] = useState([]);
   const [message, setMessage] = useState("");
@@ -22,22 +23,28 @@ const ChatSection = ({
   const socket = useContext(SocketContext);
   // join a conversation room
   useEffect(() => {
+    if (!socket) return;
     if (conversationId) {
-      console.log("Joining room:", conversationId);
       socket.emit("joinConversation", conversationId);
     }
   }, [conversationId]);
 
   // listen for new messages
   useEffect(() => {
-    socket.on("newMessage", (msg) => {
-      setAllMessages((prev) => [msg, ...prev]);
-    });
+    if (!socket) return;
 
-    return () => {
-      socket.off("newMessage");
+    const handler = ({
+      fullMessage,
+      conversationId: incomingConversationId,
+    }) => {
+      if (incomingConversationId === conversationId) {
+        setAllMessages((prev) => [fullMessage, ...prev]);
+      }
     };
-  }, []);
+
+    socket.on("newMessage", handler);
+    return () => socket.off("newMessage", handler);
+  }, [socket, conversationId]);
 
   //send message handler
   const sendMessageHandler = async () => {
@@ -78,6 +85,7 @@ const ChatSection = ({
   //get receiver profile info
   useEffect(() => {
     const getProfileData = async () => {
+      if (!receiverId) return;
       try {
         const data = await fetchUserById(receiverId);
         setReceiverData(data);
@@ -206,35 +214,50 @@ const ChatSection = ({
                 </div>
               );
             })}
+            {blockStatus.youBlocked ? (
+              <div className="flex justify-center items-center">
+                <p className="text-gray-700 font-medium">blocked</p>
+              </div>
+            ) : (
+              ""
+            )}
             <div ref={bottomRef} />
           </div>
 
           {/* Input */}
           <div className="border-t bg-white p-4">
-            <div className="flex items-center gap-3 rounded-full border bg-gray-50 px-4 py-2 shadow-sm">
-              <button className="text-gray-500 transition hover:text-blue-600">
-                <FiPlus size={20} />
-              </button>
+            {!blockStatus.youBlocked && !blockStatus.theyBlocked ? (
+              <div className="flex items-center gap-3 rounded-full border bg-gray-50 px-4 py-2 shadow-sm">
+                <button className="text-gray-500 transition hover:text-blue-600">
+                  <FiPlus size={20} />
+                </button>
 
-              <button className="text-gray-500 transition hover:text-yellow-500">
-                <FiSmile size={20} />
-              </button>
+                <button className="text-gray-500 transition hover:text-yellow-500">
+                  <FiSmile size={20} />
+                </button>
 
-              <input
-                onChange={(e) => setMessage(e.target.value)}
-                value={message}
-                type="text"
-                placeholder="Type a message..."
-                className="flex-1 bg-transparent outline-none"
-              />
+                <input
+                  onChange={(e) => setMessage(e.target.value)}
+                  value={message}
+                  type="text"
+                  placeholder="Type a message..."
+                  className="flex-1 bg-transparent outline-none"
+                />
 
-              <button
-                onClick={sendMessageHandler}
-                className="rounded-full bg-blue-600 p-3 text-white transition hover:bg-blue-700"
-              >
-                <FiSend size={18} />
-              </button>
-            </div>
+                <button
+                  onClick={sendMessageHandler}
+                  className="rounded-full bg-blue-600 p-3 text-white transition hover:bg-blue-700"
+                >
+                  <FiSend size={18} />
+                </button>
+              </div>
+            ) : (
+              <div className="flex justify-center items-center">
+                <p className="text-gray-700 font-medium">
+                  You can't send message to this person
+                </p>
+              </div>
+            )}
           </div>
         </>
       )}
