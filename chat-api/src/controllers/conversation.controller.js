@@ -129,11 +129,11 @@ const createChatAndMessage = async (req, res) => {
     });
 
     // Send only to the sender socket (so they see last message but not inflated count)
-    getIO().to(req.user.user_id).emit("newMessage", {
-      fullMessage,
-      conversationId: chat.conversation_id,
-      unseenCount: 0, // sender’s own unseen count stays 0
-    });
+    // getIO().to(req.user.user_id).emit("newMessage", {
+    //   fullMessage,
+    //   conversationId: chat.conversation_id,
+    //   unseenCount: 0, // sender’s own unseen count stays 0
+    // });
 
     await t.commit();
     res.json({ chat, message });

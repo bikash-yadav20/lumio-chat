@@ -38,7 +38,17 @@ const ChatSection = ({
       conversationId: incomingConversationId,
     }) => {
       if (incomingConversationId === conversationId) {
-        setAllMessages((prev) => [fullMessage, ...prev]);
+        setAllMessages((prev) => {
+          const exists = prev.some(
+            (msg) => msg.message_id === fullMessage.message_id,
+          );
+
+          if (exists) {
+            return prev;
+          }
+
+          return [fullMessage, ...prev];
+        });
       }
     };
 
