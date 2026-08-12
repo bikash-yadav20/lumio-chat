@@ -10,7 +10,7 @@ export const SocketProvider = ({ children }) => {
 
   const socket = useMemo(() => {
     if (!currentUser) return null;
-    return io(process.env.VITE_SOCKET_URL, {
+    return io(import.meta.env.VITE_SOCKET_URL, {
       auth: { userId: currentUser.user_id },
       withCredentials: true,
     });
