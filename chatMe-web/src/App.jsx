@@ -10,44 +10,59 @@ import ChatPage from "./pages/ChatPage";
 import ProtectedRoute from "./components/protectedRoute/ProtectedRoute";
 import { useState } from "react";
 import AddProfilePic from "./pages/AddProfilePic";
+import Group from "./pages/Group";
+import { SocketProvider } from "./context/socketContext/socketContext";
+import { AuthProvider } from "./context/authContext/authContext";
 
 function App() {
   const [profilePic, setProfilePic] = useState(false);
   return (
     <BrowserRouter>
-      <ToastContainer />
+      <AuthProvider>
+        <SocketProvider>
+          <ToastContainer />
 
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route
-          path="/signup"
-          element={<Signup setProfilePic={setProfilePic} />}
-        />
-        <Route
-          path="/account"
-          element={
-            <ProtectedRoute>
-              <AccountControl profilePic={profilePic} />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/add-profile-pic"
-          element={
-            <ProtectedRoute>
-              <AddProfilePic />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/chat-me"
-          element={
-            <ProtectedRoute>
-              <ChatPage />
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route
+              path="/signup"
+              element={<Signup setProfilePic={setProfilePic} />}
+            />
+            <Route
+              path="/account"
+              element={
+                <ProtectedRoute>
+                  <AccountControl profilePic={profilePic} />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/add-profile-pic"
+              element={
+                <ProtectedRoute>
+                  <AddProfilePic />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/chat-me"
+              element={
+                <ProtectedRoute>
+                  <ChatPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/create-group"
+              element={
+                <ProtectedRoute>
+                  <Group />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </SocketProvider>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

@@ -1,11 +1,17 @@
 import React, { use, useContext, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { FiSearch, FiEdit2 } from "react-icons/fi";
 import { createConversation, getChats as fetchChats } from "../services/client";
 import { markMessageAsSeen } from "../services/client";
 import { AuthContext } from "../context/authContext/authContext";
 import { SocketContext } from "../context/socketContext/socketContext";
 
-const ChatSidebar = ({ setConversationId, setReceiverId, setIsActive }) => {
+const ChatSidebar = ({
+  setConversationId,
+  setReceiverId,
+  setIsActive,
+  setSelectedConversation,
+}) => {
   const [chats, setChats] = useState([]);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("chat");
@@ -53,6 +59,7 @@ const ChatSidebar = ({ setConversationId, setReceiverId, setIsActive }) => {
     const loadChats = async () => {
       try {
         const data = await fetchChats();
+        console.log("ALL CHATS:", data);
         setChats(data);
         if (socket) {
           data.forEach((chat) => {
@@ -96,9 +103,12 @@ const ChatSidebar = ({ setConversationId, setReceiverId, setIsActive }) => {
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold text-gray-800">Messages</h2>
 
-          <button className="rounded-full p-2 transition hover:bg-gray-100">
+          <Link
+            to={"/create-group"}
+            className="rounded-full p-2 transition hover:bg-gray-100"
+          >
             <FiEdit2 size={20} />
-          </button>
+          </Link>
         </div>
 
         {/* Search */}
@@ -150,7 +160,12 @@ const ChatSidebar = ({ setConversationId, setReceiverId, setIsActive }) => {
               <div
                 onClick={() => {
                   setConversationId(chat.conversation_id);
-                  setReceiverId(chat.participants[0].user_id);
+                  setSelectedConversation(chat);
+                  if (chat.type === "private") {
+                    setReceiverId(chat.participants?.[0]?.user_id);
+                  } else {
+                    setReceiverId(null);
+                  }
                   handleMarkMessageAsSeen(chat.conversation_id);
                   setIsActive(true);
                 }}
@@ -161,8 +176,16 @@ const ChatSidebar = ({ setConversationId, setReceiverId, setIsActive }) => {
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="relative">
                     <img
-                      src={chat.participants?.[0]?.profile_picture}
-                      alt={chat.participants?.[0]?.full_name || "User"}
+                      src={
+                        chat.type === "group"
+                          ? chat.group_picture
+                          : chat.participants?.[0]?.profile_picture
+                      }
+                      alt={
+                        chat.type === "group"
+                          ? chat.group_name
+                          : chat.participants?.[0]?.full_name || "User"
+                      }
                       className="h-14 w-14 rounded-full object-cover"
                     />
 
@@ -171,7 +194,9 @@ const ChatSidebar = ({ setConversationId, setReceiverId, setIsActive }) => {
 
                   <div className="min-w-0">
                     <h3 className="truncate font-semibold text-gray-900">
-                      {chat.participants?.[0]?.full_name || "Unknown User"}
+                      {chat.type === "group"
+                        ? chat.group_name
+                        : chat.participants?.[0]?.full_name || "Unknown User"}
                     </h3>
 
                     <p className="truncate text-sm text-gray-500">
@@ -226,6 +251,18 @@ const ChatSidebar = ({ setConversationId, setReceiverId, setIsActive }) => {
                 onClick={async () => {
                   try {
                     const conv = await createConversation(user.user_id);
+                    setSelectedConversation({
+                      ...conv,
+                      type: "private",
+                      participants: [
+                        {
+                          user_id: user.user_id,
+                          full_name: user.full_name,
+                          user_name: user.suer_name,
+                          profile_picture: user.profile_picture,
+                        },
+                      ],
+                    });
                     setConversationId(conv.conversation_id);
                     setReceiverId(user.user_id);
                     setIsActive(true);

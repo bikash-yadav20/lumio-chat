@@ -94,47 +94,52 @@ const createChatAndMessage = async (req, res) => {
     }
 
     // Save the message
-    const message = await Message.create(
-      {
-        conversation_id: chat.conversation_id,
-        sender_id: req.user.user_id,
-        message_type: req.body.message_type || "text",
-        message: req.body.message,
-        is_seen: false,
-      },
-      { transaction: t },
-    );
+    let message = null;
 
-    const sender = await User.findByPk(req.user.user_id, {
-      attributes: ["user_id", "user_name"],
-    });
+    if (req.body.message) {
+      message = await Message.create(
+        {
+          conversation_id: chat.conversation_id,
+          sender_id: req.user.user_id,
+          message_type: req.body.message_type || "text",
+          message: req.body.message,
+          is_seen: false,
+        },
+        { transaction: t },
+      );
+    }
 
-    // Attach user to message
-    const fullMessage = { ...message.toJSON(), User: sender };
+    if (message) {
+      const sender = await User.findByPk(req.user.user_id, {
+        attributes: ["user_id", "user_name"],
+      });
 
-    // unseen messages count for receiver
-    const unseenCount = await Message.count({
-      where: {
-        conversation_id: chat.conversation_id,
-        is_seen: false,
-        sender_id: { [Op.ne]: req.user.user_id },
-      },
-    });
+      // Attach user to message
+      const fullMessage = { ...message.toJSON(), User: sender };
 
-    // Send to all other participants (receiver side)
-    getIO().to(chat.conversation_id).emit("newMessage", {
-      fullMessage,
-      conversationId: chat.conversation_id,
-      unseenCount, // receiver sees updated count
-    });
+      // unseen messages count for receiver
+      const unseenCount = await Message.count({
+        where: {
+          conversation_id: chat.conversation_id,
+          is_seen: false,
+          sender_id: { [Op.ne]: req.user.user_id },
+        },
+      });
 
-    // Send only to the sender socket (so they see last message but not inflated count)
-    // getIO().to(req.user.user_id).emit("newMessage", {
-    //   fullMessage,
-    //   conversationId: chat.conversation_id,
-    //   unseenCount: 0, // sender’s own unseen count stays 0
-    // });
+      // Send to all other participants (receiver side)
+      getIO().to(chat.conversation_id).emit("newMessage", {
+        fullMessage,
+        conversationId: chat.conversation_id,
+        unseenCount, // receiver sees updated count
+      });
 
+      // Send only to the sender socket (so they see last message but not inflated count)
+      // getIO().to(req.user.user_id).emit("newMessage", {
+      //   fullMessage,
+      //   conversationId: chat.conversation_id,
+      //   unseenCount: 0, // sender’s own unseen count stays 0
+      // });
+    }
     await t.commit();
     res.json({ chat, message });
   } catch (error) {
@@ -199,6 +204,9 @@ const getConversation = async (req, res) => {
 
         return {
           conversation_id: conv.conversation_id,
+          type: conv.type,
+          group_name: conv.group_name,
+          group_picture: conv.group_picture,
           participants: otherParticipants,
           last_message: lastMessage
             ? {

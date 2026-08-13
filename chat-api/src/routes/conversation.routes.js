@@ -15,6 +15,7 @@ router.post(
   blockcheck,
   createChatAndMessage,
 );
+router.post("/create-group", auth.tokenVerification, createChatAndMessage);
 
 //get all chats
 router.get("/chats", auth.tokenVerification, getConversation);

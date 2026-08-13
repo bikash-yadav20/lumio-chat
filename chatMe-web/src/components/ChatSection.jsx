@@ -9,16 +9,22 @@ import { SocketContext } from "../context/socketContext/socketContext";
 
 const ChatSection = ({
   isActive,
+  setIsActive,
   conversationId,
   receiverId,
   setReceiverData,
   receiverData,
   blockStatus,
+  selectedConversation,
 }) => {
   const [allMessages, setAllMessages] = useState([]);
   const [message, setMessage] = useState("");
   const { currentUser, fetchCurrentUser } = useContext(AuthContext);
   const bottomRef = useRef(null);
+
+  //check if chat is a group or private chat
+  const isGroup = selectedConversation?.type === "group";
+  console.log("selected conv", selectedConversation);
 
   const socket = useContext(SocketContext);
   // join a conversation room
@@ -60,12 +66,23 @@ const ChatSection = ({
   const sendMessageHandler = async () => {
     try {
       if (message.length <= 0) return;
-      const res = await sendMessage({
-        type: "private",
-        message_type: "text",
-        message: message,
-        receiver_id: receiverId,
-      });
+      let payload;
+      if (isGroup) {
+        payload = {
+          type: "group",
+          message_type: "text",
+          message: message,
+          receiver_id: conversationId,
+        };
+      } else {
+        payload = {
+          type: "private",
+          message_type: "text",
+          message: message,
+          receiver_id: receiverId,
+        };
+      }
+      const res = await sendMessage(payload);
       setMessage("");
     } catch (error) {
       console.error(error.message);
@@ -118,7 +135,7 @@ const ChatSection = ({
             </div>
 
             <h1 className="mt-6 text-4xl font-bold text-gray-900">
-              Welcome to Lumina Chat
+              Welcome to Lumio Chat
             </h1>
 
             <p className="mx-auto mt-4 max-w-md text-lg leading-8 text-gray-600">
@@ -136,13 +153,20 @@ const ChatSection = ({
           {/* Header */}
           <div className="sticky top-0 z-20 flex h-16 items-center justify-between border-b bg-white px-5 shadow-sm">
             <div className="flex items-center gap-3">
-              <button className="rounded-full p-2 transition hover:bg-gray-100 md:hidden">
+              <button
+                onClick={() => setIsActive(false)}
+                className="rounded-full p-2 transition hover:bg-gray-100 md:hidden"
+              >
                 <FiArrowLeft size={20} />
               </button>
 
               <div className="relative">
                 <img
-                  src={receiverData.profile_picture}
+                  src={
+                    isGroup
+                      ? selectedConversation.group_picture
+                      : receiverData.profile_picture
+                  }
                   alt=""
                   className="h-11 w-11 rounded-full object-cover"
                 />
@@ -152,7 +176,9 @@ const ChatSection = ({
 
               <div>
                 <h3 className="font-semibold text-gray-900">
-                  {receiverData.full_name}
+                  {isGroup
+                    ? selectedConversation.group_name
+                    : receiverData.full_name}
                 </h3>
 
                 <p className="text-sm text-green-600">Online</p>

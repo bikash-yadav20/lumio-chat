@@ -79,8 +79,8 @@ exports.login_user = async (req, res) => {
 
     res.cookie("token", token, {
       httpOnly: true,
-      secure: true,
-      sameSite: "none",
+      // secure: true,
+      sameSite: "strict",
       maxAge: 60 * 60 * 1000,
     });
 
@@ -103,5 +103,59 @@ exports.login_user = async (req, res) => {
     console.error(error);
 
     res.status(500).json({ message: "Login failed", error });
+  }
+};
+
+//logout user
+
+exports.logoutUser = async (req, res) => {
+  try {
+    const userId = req.user?.user_id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const user = await User.findOne({
+      where: {
+        user_id: userId,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // User is now offline
+    user.is_online = false;
+    user.last_seen = new Date();
+
+    await user.save();
+
+    // Clear JWT cookie
+    res.clearCookie("token", {
+      httpOnly: true,
+      sameSite: "strict",
+      // secure: process.env.NODE_ENV === "production",
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Logged out successfully",
+    });
+  } catch (error) {
+    console.error("Logout error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to logout",
+      error: error.message,
+    });
   }
 };

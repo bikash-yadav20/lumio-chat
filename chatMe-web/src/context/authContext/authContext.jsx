@@ -3,8 +3,10 @@ import {
   getUsers as fetchUsers,
   getLoggedUser,
   uploadDp,
+  logoutUser,
 } from "../../services/client";
 import { getMe } from "../../services/client";
+import { useNavigate } from "react-router-dom";
 
 export const AuthContext = createContext();
 
@@ -13,6 +15,8 @@ export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loggedInUser, setLoggedInUser] = useState({});
   const [profilePic, setProfilePic] = useState(null);
+
+  const navigate = useNavigate();
 
   //get logged in users profile data
   const fetchLoggedUser = async () => {
@@ -59,6 +63,19 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  //logout user
+
+  const logout = async () => {
+    try {
+      const data = await logoutUser();
+      console.log("log out success", data);
+      setLoggedInUser(null);
+      navigate("/login");
+    } catch (error) {
+      console.error("failed to logout", error);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -70,6 +87,7 @@ export const AuthProvider = ({ children }) => {
         loggedInUser,
         updateProfilePic,
         setProfilePic,
+        logout,
       }}
     >
       {children}

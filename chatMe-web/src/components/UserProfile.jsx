@@ -1,9 +1,9 @@
 import React, { useContext } from "react";
-import { FiUser, FiInfo, FiAtSign, FiEdit2 } from "react-icons/fi";
+import { FiUser, FiInfo, FiAtSign, FiEdit2, FiLogOut } from "react-icons/fi";
 import { AuthContext } from "../context/authContext/authContext";
 
 const UserProfile = () => {
-  const { loggedInUser } = useContext(AuthContext);
+  const { loggedInUser, logout } = useContext(AuthContext);
 
   return (
     <div className="w-full h-full bg-[#F8FAFC] overflow-y-auto">
@@ -91,6 +91,17 @@ const UserProfile = () => {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Logout */}
+        <div className="mt-10 flex justify-center lg:justify-start">
+          <button
+            onClick={logout}
+            className="flex items-center gap-2 rounded-xl border border-red-200 bg-white px-6 py-3 font-semibold text-red-600 shadow-sm transition hover:bg-red-50"
+          >
+            <FiLogOut size={19} />
+            Logout
+          </button>
         </div>
       </div>
     </div>

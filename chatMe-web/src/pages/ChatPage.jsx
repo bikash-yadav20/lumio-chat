@@ -14,6 +14,7 @@ const ChatPage = () => {
     youBlocked: false,
     theyBlocked: false,
   });
+  const [selectedConversation, setSelectedConversation] = useState({});
   console.log("conv id", conversationId);
 
   useEffect(() => {
@@ -48,6 +49,7 @@ const ChatPage = () => {
             setConversationId={setConversationId}
             setReceiverId={setReceiverId}
             setIsActive={setIsActive}
+            setSelectedConversation={setSelectedConversation}
           />
         </aside>
 
@@ -62,11 +64,13 @@ const ChatPage = () => {
         >
           <ChatSection
             isActive={isActive}
+            setIsActive={setIsActive}
             conversationId={conversationId}
             receiverId={receiverId}
             setReceiverData={setReceiverData}
             receiverData={receiverData}
             blockStatus={blockStatus}
+            selectedConversation={selectedConversation}
           />
         </main>
 

@@ -33,6 +33,12 @@ export const login = async (payload) => {
   return res.data;
 };
 
+//logout user
+export const logoutUser = async () => {
+  const res = await api.post("/chat-me/logout");
+  return res.data;
+};
+
 export const getChats = async () => {
   const res = await api.get("/chat-me/chats");
   return res.data;
@@ -47,6 +53,12 @@ export const createConversation = async (receiverId) => {
 //send message
 export const sendMessage = async (payload) => {
   const res = await api.post("/chat-me/send-message", payload);
+  return res.data;
+};
+
+//create a group
+export const createGroup = async (payload) => {
+  const res = await api.post("/chat-me/create-group", payload);
   return res.data;
 };
 
