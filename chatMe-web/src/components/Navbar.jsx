@@ -25,7 +25,7 @@ const Navbar = () => {
         />
 
         <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-blue-700 whitespace-nowrap">
-          Lumina Chat
+          Lumio Chat
         </h1>
       </div>
 
