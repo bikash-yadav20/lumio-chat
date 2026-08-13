@@ -77,7 +77,7 @@ export default function Signup({ setProfilePic }) {
           </div>
 
           <h1 className="mt-4 text-4xl font-bold tracking-tight text-blue-700">
-            Lumina Chat
+            Lumio Chat
           </h1>
 
           <p className="mt-2 text-sm text-gray-500">
