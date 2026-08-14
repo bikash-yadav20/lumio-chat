@@ -3,7 +3,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Signup from "./pages/Signup";
 
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AccountControl from "./pages/AccountControl";
 
 import ChatPage from "./pages/ChatPage";
@@ -44,6 +44,9 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
+            {/* defaulte route */}
+            <Route path="/" element={<Navigate to="/chat-me" replace />} />
             <Route
               path="/chat-me"
               element={
