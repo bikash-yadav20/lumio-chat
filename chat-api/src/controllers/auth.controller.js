@@ -7,6 +7,8 @@ const jwt = require("jsonwebtoken");
 exports.register_user = async (req, res) => {
   //verify input data
   const user_data = UserSchema.safeParse(req.body);
+  console.log("log from auth", user_data);
+  
 
   if (!user_data.success) {
     const errors = user_data.error.issues.map((issues) => issues.message);
