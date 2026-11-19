@@ -166,7 +166,7 @@ export default function Signup({ setProfilePic }) {
                   value={formData.password}
                   name="password"
                   onChange={handleChange}
-                  placeholder="••••••••"
+                  placeholder="min 8 characters"
                   required
                   className="w-full rounded-lg border border-gray-300 bg-gray-50 py-3 pl-12 pr-12 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
                 />
